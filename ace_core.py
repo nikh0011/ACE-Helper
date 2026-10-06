@@ -1,5 +1,6 @@
 from langchain_ollama import ChatOllama
 import re
+from rag_service import search_knowledge
 
 llm = ChatOllama(
     model="llama3.2",
@@ -60,17 +61,16 @@ orders = {
     }
 }
 
-def search_knowledge(message):
-    message_lower = message.lower()
+def search_knowledge_rag(message):
+    results = search_knowledge(message)
 
-    for item in company_knowledge:
-        if any(
-            keyword in message_lower
-            for keyword in item["title"].lower().split()
-        ):
-            return item
+    if not results:
+        return None
 
-    return None
+    return {
+        "title": "Relevant Company Policy",
+        "content": "\n".join(results)
+    }
 
 def get_order_status(order_number):
     return orders.get(str(order_number))
@@ -115,7 +115,7 @@ def generate_ai_response(message):
             f"{order_number}."
         )
 
-    knowledge = search_knowledge(message)
+    knowledge = search_knowledge_rag(message)
 
     if knowledge:
         prompt = f"""
